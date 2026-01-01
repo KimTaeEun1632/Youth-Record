@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
-import 'user_service.dart';
+import 'services/user_service.dart';
 import 'screens/episode_list_screen.dart';
 import 'screens/auth_gate.dart';
 

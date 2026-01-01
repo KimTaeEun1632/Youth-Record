@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/episode.dart';
 import '../services/user_progress_service.dart';
 import '../utils/ep_unlock_helper.dart';
+import 'episode_detail_screen.dart';
 
 class EpisodeListScreen extends StatelessWidget {
   const EpisodeListScreen({super.key});
@@ -68,7 +69,12 @@ class EpisodeListScreen extends StatelessWidget {
                           return;
                         }
 
-                        // 🔜 다음 단계: EP 상세 화면 이동
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => EpisodeDetailScreen(episode: ep),
+                          ),
+                        );
                       },
                     ),
                   );
