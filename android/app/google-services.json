@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "486296031256",
+    "project_id": "youth-record",
+    "storage_bucket": "youth-record.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:486296031256:android:2e5d0ff6a7ab37b952336d",
+        "android_client_info": {
+          "package_name": "com.example.youth_record"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "486296031256-2kn1014v609l07as2ms5bi34rfk1ab1c.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyADQA3RFJp_TL1X4K7XMzAChnvcYZGmENc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "486296031256-2kn1014v609l07as2ms5bi34rfk1ab1c.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
