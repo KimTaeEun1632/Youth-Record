@@ -6,12 +6,21 @@ import '../utils/ep_unlock_helper.dart';
 import 'episode_detail_screen.dart';
 
 class EpisodeListScreen extends StatelessWidget {
-  const EpisodeListScreen({super.key});
+  final String chapterTitle;
+  final int startEp;
+  final int endEp;
+
+  const EpisodeListScreen({
+    super.key,
+    required this.chapterTitle,
+    required this.startEp,
+    required this.endEp,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('청춘기록')),
+      appBar: AppBar(title: Text(chapterTitle)),
       body: StreamBuilder<int>(
         stream: UserProgressService.completedEpCountStream(),
         builder: (context, userSnapshot) {
@@ -24,6 +33,8 @@ class EpisodeListScreen extends StatelessWidget {
           return StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
                 .collection('episodes')
+                .where('episodeNumber', isGreaterThanOrEqualTo: startEp)
+                .where('episodeNumber', isLessThanOrEqualTo: endEp)
                 .orderBy('episodeNumber')
                 .snapshots(),
             builder: (context, epSnapshot) {
