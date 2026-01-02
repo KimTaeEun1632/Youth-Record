@@ -1,13 +1,51 @@
 import 'package:flutter/material.dart';
 import '../models/episode.dart';
+import '../services/user_progress_service.dart';
 
-class EpisodeDetailScreen extends StatelessWidget {
+class EpisodeDetailScreen extends StatefulWidget {
   final Episode episode;
 
   const EpisodeDetailScreen({super.key, required this.episode});
 
   @override
+  State<EpisodeDetailScreen> createState() => _EpisodeDetailScreenState();
+}
+
+class _EpisodeDetailScreenState extends State<EpisodeDetailScreen> {
+  final TextEditingController _noteController = TextEditingController();
+  bool _isSubmitting = false;
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _completeEpisode() async {
+    if (_noteController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('한 줄 기록을 남겨주세요 ✍️')));
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    await UserProgressService.completeEpisode(
+      episodeNumber: widget.episode.episodeNumber,
+      note: _noteController.text.trim(),
+    );
+
+    setState(() => _isSubmitting = false);
+
+    if (!mounted) return;
+    Navigator.pop(context);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final episode = widget.episode;
+
     return Scaffold(
       appBar: AppBar(title: Text('EP.${episode.episodeNumber}')),
       body: SingleChildScrollView(
@@ -26,65 +64,44 @@ class EpisodeDetailScreen extends StatelessWidget {
             // 설명
             Text(episode.description, style: const TextStyle(fontSize: 16)),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            // 카테고리
             Chip(label: Text(episode.category)),
 
             const SizedBox(height: 32),
 
-            // 사진 영역
+            // ✍️ 한 줄 기록
             const Text(
-              '사진 기록 (최대 4장)',
+              '한 줄 기록',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
-            _PhotoGrid(),
+            TextField(
+              controller: _noteController,
+              maxLength: 50,
+              decoration: const InputDecoration(
+                hintText: '이 순간을 한 줄로 남겨보세요',
+                border: OutlineInputBorder(),
+              ),
+            ),
 
-            const SizedBox(height: 40),
+            const SizedBox(height: 32),
 
             // 완료 버튼
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // 🔜 다음 단계: EP 완료 처리
-                },
-                child: const Text('이 에피소드 완료하기'),
+                onPressed: _isSubmitting ? null : _completeEpisode,
+                child: _isSubmitting
+                    ? const CircularProgressIndicator()
+                    : const Text('이 에피소드 완료하기'),
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _PhotoGrid extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: 4,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-      ),
-      itemBuilder: (context, index) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Center(
-            child: Icon(Icons.add_a_photo, color: Colors.grey, size: 32),
-          ),
-        );
-      },
     );
   }
 }

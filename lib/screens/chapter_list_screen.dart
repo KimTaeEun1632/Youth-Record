@@ -1,6 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../data/chapters.dart';
+import '../services/user_progress_service.dart';
+import '../utils/chapter_progress_helper.dart';
 import 'episode_list_screen.dart';
 
 class ChapterListScreen extends StatelessWidget {
@@ -8,51 +9,42 @@ class ChapterListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
-
     return Scaffold(
       appBar: AppBar(title: const Text('청춘기록')),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('chapters')
-            .orderBy('chapterNumber')
-            .snapshots(),
+      body: StreamBuilder<int>(
+        stream: UserProgressService.completedEpCountStream(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final chapters = snapshot.data!.docs;
+          final completedEpCount = snapshot.data!;
 
-          return FutureBuilder<DocumentSnapshot>(
-            future: FirebaseFirestore.instance
-                .collection('users')
-                .doc(uid)
-                .get(),
-            builder: (context, userSnapshot) {
-              if (!userSnapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: chapters.length,
+            itemBuilder: (context, index) {
+              final chapter = chapters[index];
 
-              final completedEpCount =
-                  (userSnapshot.data!['completedEpCount'] ?? 0) as int;
+              final completedInChapter = calculateCompletedInChapter(
+                completedEpCount: completedEpCount,
+                startEp: chapter.startEp,
+                endEp: chapter.endEp,
+              );
 
-              return ListView.builder(
-                itemCount: chapters.length,
-                itemBuilder: (context, index) {
-                  final chapter = chapters[index];
-                  final isFinal = chapter['isFinal'] ?? false;
+              final progress = completedInChapter / chapter.totalCount;
 
-                  bool isLocked = false;
-                  if (isFinal) {
-                    final required = chapter['requiredCompletedCount'] ?? 0;
-                    isLocked = completedEpCount < required;
-                  }
+              final isLocked = chapter.isFinal && completedEpCount < 49;
 
-                  return ChapterCard(
-                    title: chapter['title'],
-                    description: chapter['description'],
-                    isLocked: isLocked,
+              return Opacity(
+                opacity: isLocked ? 0.4 : 1,
+                child: Card(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
                     onTap: isLocked
                         ? null
                         : () {
@@ -60,55 +52,56 @@ class ChapterListScreen extends StatelessWidget {
                               context,
                               MaterialPageRoute(
                                 builder: (_) => EpisodeListScreen(
-                                  chapterTitle: chapter['title'],
-                                  startEp: chapter['startEp'],
-                                  endEp: chapter['endEp'],
+                                  chapterTitle: chapter.title,
+                                  startEp: chapter.startEp,
+                                  endEp: chapter.endEp,
                                 ),
                               ),
                             );
                           },
-                  );
-                },
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  chapter.title,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              if (isLocked) const Icon(Icons.lock),
+                            ],
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          LinearProgressIndicator(
+                            value: progress,
+                            minHeight: 8,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          Text(
+                            '$completedInChapter / ${chapter.totalCount} 완료',
+                            style: TextStyle(color: Colors.grey.shade600),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               );
             },
           );
         },
-      ),
-    );
-  }
-}
-
-class ChapterCard extends StatelessWidget {
-  final String title;
-  final String description;
-  final bool isLocked;
-  final VoidCallback? onTap;
-
-  const ChapterCard({
-    super.key,
-    required this.title,
-    required this.description,
-    required this.isLocked,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: isLocked ? 0.5 : 1,
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: ListTile(
-          title: Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          subtitle: Text(description),
-          trailing: isLocked
-              ? const Icon(Icons.lock)
-              : const Icon(Icons.arrow_forward_ios),
-          onTap: onTap,
-        ),
       ),
     );
   }
