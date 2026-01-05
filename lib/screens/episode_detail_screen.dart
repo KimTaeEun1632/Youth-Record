@@ -13,12 +13,34 @@ class EpisodeDetailScreen extends StatefulWidget {
 
 class _EpisodeDetailScreenState extends State<EpisodeDetailScreen> {
   final TextEditingController _noteController = TextEditingController();
+
+  bool _isLoading = true;
+  bool _isCompleted = false;
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecord();
+  }
 
   @override
   void dispose() {
     _noteController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadRecord() async {
+    final note = await UserProgressService.getEpisodeNote(
+      widget.episode.episodeNumber,
+    );
+
+    if (note != null) {
+      _noteController.text = note;
+      _isCompleted = true;
+    }
+
+    setState(() => _isLoading = false);
   }
 
   Future<void> _completeEpisode() async {
@@ -36,7 +58,19 @@ class _EpisodeDetailScreenState extends State<EpisodeDetailScreen> {
       note: _noteController.text.trim(),
     );
 
-    setState(() => _isSubmitting = false);
+    if (!mounted) return;
+    Navigator.pop(context);
+  }
+
+  Future<void> _updateEpisode() async {
+    if (_noteController.text.trim().isEmpty) return;
+
+    setState(() => _isSubmitting = true);
+
+    await UserProgressService.updateEpisodeNote(
+      episodeNumber: widget.episode.episodeNumber,
+      note: _noteController.text.trim(),
+    );
 
     if (!mounted) return;
     Navigator.pop(context);
@@ -46,6 +80,10 @@ class _EpisodeDetailScreenState extends State<EpisodeDetailScreen> {
   Widget build(BuildContext context) {
     final episode = widget.episode;
 
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text('EP.${episode.episodeNumber}')),
       body: SingleChildScrollView(
@@ -53,29 +91,20 @@ class _EpisodeDetailScreenState extends State<EpisodeDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 제목
             Text(
               episode.title,
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-
             const SizedBox(height: 12),
-
-            // 설명
-            Text(episode.description, style: const TextStyle(fontSize: 16)),
-
+            Text(episode.description),
             const SizedBox(height: 20),
-
             Chip(label: Text(episode.category)),
-
             const SizedBox(height: 32),
 
-            // ✍️ 한 줄 기록
             const Text(
               '한 줄 기록',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-
             const SizedBox(height: 8),
 
             TextField(
@@ -89,14 +118,24 @@ class _EpisodeDetailScreenState extends State<EpisodeDetailScreen> {
 
             const SizedBox(height: 32),
 
-            // 완료 버튼
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _isSubmitting ? null : _completeEpisode,
+                onPressed: _isSubmitting
+                    ? null
+                    : _isCompleted
+                    ? _updateEpisode
+                    : _completeEpisode,
                 child: _isSubmitting
-                    ? const CircularProgressIndicator()
-                    : const Text('이 에피소드 완료하기'),
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(_isCompleted ? '기록 수정하기' : '이 에피소드 완료하기'),
               ),
             ),
           ],
