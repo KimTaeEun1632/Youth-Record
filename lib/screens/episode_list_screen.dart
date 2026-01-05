@@ -23,71 +23,92 @@ class EpisodeListScreen extends StatelessWidget {
       appBar: AppBar(title: Text(chapterTitle)),
       body: StreamBuilder<int>(
         stream: UserProgressService.completedEpCountStream(),
-        builder: (context, userSnapshot) {
-          if (!userSnapshot.hasData) {
+        builder: (context, countSnapshot) {
+          if (!countSnapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final completedCount = userSnapshot.data!;
+          final completedCount = countSnapshot.data!;
 
-          return StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('episodes')
-                .where('episodeNumber', isGreaterThanOrEqualTo: startEp)
-                .where('episodeNumber', isLessThanOrEqualTo: endEp)
-                .orderBy('episodeNumber')
-                .snapshots(),
-            builder: (context, epSnapshot) {
-              if (!epSnapshot.hasData) {
+          return StreamBuilder<Set<int>>(
+            stream: UserProgressService.completedEpisodeSetStream(),
+            builder: (context, completedSnapshot) {
+              if (!completedSnapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              final episodes = epSnapshot.data!.docs.map((doc) {
-                return Episode.fromFirestore(
-                  doc.id,
-                  doc.data() as Map<String, dynamic>,
-                );
-              }).toList();
+              final completedSet = completedSnapshot.data!;
 
-              return ListView.builder(
-                itemCount: episodes.length,
-                itemBuilder: (context, index) {
-                  final ep = episodes[index];
+              return StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('episodes')
+                    .where(
+                      'episodeNumber',
+                      isGreaterThanOrEqualTo: startEp,
+                      isLessThanOrEqualTo: endEp,
+                    )
+                    .orderBy('episodeNumber')
+                    .snapshots(),
+                builder: (context, epSnapshot) {
+                  if (!epSnapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                  final unlocked = isEpUnlocked(
-                    userCompletedCount: completedCount,
-                    requiredCompletedCount: ep.requiredCompletedCount,
-                  );
+                  final episodes = epSnapshot.data!.docs.map((doc) {
+                    return Episode.fromFirestore(
+                      doc.id,
+                      doc.data() as Map<String, dynamic>,
+                    );
+                  }).toList();
 
-                  return Opacity(
-                    opacity: unlocked ? 1.0 : 0.4,
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        child: unlocked
-                            ? Text(ep.episodeNumber.toString())
-                            : const Icon(Icons.lock),
-                      ),
-                      title: Text(ep.title),
-                      subtitle: Text(ep.description),
-                      trailing: ep.isSpecial
-                          ? const Icon(Icons.star, color: Colors.amber)
-                          : null,
-                      onTap: () {
-                        if (!unlocked) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('아직 잠겨 있는 에피소드예요 🔒')),
-                          );
-                          return;
-                        }
+                  return ListView.builder(
+                    itemCount: episodes.length,
+                    itemBuilder: (context, index) {
+                      final ep = episodes[index];
 
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => EpisodeDetailScreen(episode: ep),
+                      final isCompleted = completedSet.contains(
+                        ep.episodeNumber,
+                      );
+
+                      final unlocked = isEpUnlocked(
+                        userCompletedCount: completedCount,
+                        requiredCompletedCount: ep.requiredCompletedCount,
+                      );
+
+                      return Opacity(
+                        opacity: unlocked ? 1 : 0.4,
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: isCompleted ? Colors.green : null,
+                            child: isCompleted
+                                ? const Icon(Icons.check, color: Colors.white)
+                                : unlocked
+                                ? Text(ep.episodeNumber.toString())
+                                : const Icon(Icons.lock),
                           ),
-                        );
-                      },
-                    ),
+                          title: Text(ep.title),
+                          subtitle: Text(ep.description),
+                          onTap: () {
+                            if (!unlocked) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('아직 잠겨 있는 에피소드예요 🔒'),
+                                ),
+                              );
+                              return;
+                            }
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    EpisodeDetailScreen(episode: ep),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
                   );
                 },
               );

@@ -66,4 +66,17 @@ class UserProgressService {
         .doc(episodeNumber.toString())
         .update({'note': note, 'updatedAt': FieldValue.serverTimestamp()});
   }
+
+  static Stream<Set<int>> completedEpisodeSetStream() {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('records')
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.map((doc) => int.parse(doc.id)).toSet();
+        });
+  }
 }
