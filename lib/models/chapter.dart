@@ -1,6 +1,7 @@
 class Chapter {
   final String id;
   final String title;
+  final String subTitle;
   final String description;
   final String coverAssets;
   final int startEp;
@@ -10,6 +11,7 @@ class Chapter {
   Chapter({
     required this.id,
     required this.title,
+    required this.subTitle,
     required this.description,
     required this.coverAssets,
     required this.startEp,

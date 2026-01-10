@@ -44,11 +44,8 @@ class ChapterListScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => EpisodeListScreen(
-                                chapterTitle: chapter.title,
-                                startEp: chapter.startEp,
-                                endEp: chapter.endEp,
-                              ),
+                              builder: (_) =>
+                                  EpisodeListScreen(chapter: chapter),
                             ),
                           );
                         }
@@ -79,11 +76,7 @@ class ChapterListScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => EpisodeListScreen(
-                        chapterTitle: chapter.title,
-                        startEp: chapter.startEp,
-                        endEp: chapter.endEp,
-                      ),
+                      builder: (_) => EpisodeListScreen(chapter: chapter),
                     ),
                   );
                 },
@@ -208,9 +201,9 @@ class _ChapterCard extends StatelessWidget {
 
                     const SizedBox(height: 6),
 
-                    /// Description (메인 타이틀)
+                    /// subTitle (서브 타이틀)
                     Text(
-                      chapter.description,
+                      chapter.subTitle,
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
